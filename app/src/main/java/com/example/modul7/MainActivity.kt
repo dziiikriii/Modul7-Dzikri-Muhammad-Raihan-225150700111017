@@ -83,41 +83,60 @@ class MainActivity : AppCompatActivity() {
     internal class SlotTask(private val slotImg: ImageView) : Runnable {
         private val random = Random()
         var play = true
+        private val arrayUrl = ArrayList<String>() // ArrayList untuk menyimpan URL gambar
 
         override fun run() {
-            while (play) {
-                try {
-//                    loadStringFromNetwork("https://662e87fba7dda1fa378d337e.mockapi.io/api/v1/fruits")
+            try {
+                // Ambil gambar dari URL dan simpan ke ArrayList
+                loadImagesFromNetwork()
+
+                while (play) {
+                    // Randomisasi URL gambar
                     val imageUrl = getRandomImageUrl()
 
+                    // Tampilkan gambar menggunakan Glide
                     Handler(Looper.getMainLooper()).post {
                         Glide.with(slotImg.context)
                             .load(imageUrl)
                             .into(slotImg)
                     }
-                    Thread.sleep(random.nextInt(1000).toLong())
-                } catch (e: InterruptedException) {
-                    e.printStackTrace()
+
+                    // Tunggu untuk memuat gambar berikutnya
+                    Thread.sleep(random.nextInt(500).toLong())
                 }
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
             }
         }
 
-        private fun getRandomImageUrl(): String {
+        // Metode untuk memuat gambar dari URL dan menyimpannya ke ArrayList
+        private fun loadImagesFromNetwork() {
             val apiUrl = "https://662e87fba7dda1fa378d337e.mockapi.io/api/v1/fruits"
             try {
                 val jsonString = URL(apiUrl).readText()
                 val jsonArray = JSONArray(jsonString)
-                val randomIndex = random.nextInt(jsonArray.length())
-                val jsonObject = jsonArray.getJSONObject(randomIndex)
-                return jsonObject.getString("url")
+                for (i in 0 until jsonArray.length()) {
+                    val jsonObject = jsonArray.getJSONObject(i)
+                    arrayUrl.add(jsonObject.getString("url"))
+                }
             } catch (e: IOException) {
                 e.printStackTrace()
             } catch (e: JSONException) {
                 e.printStackTrace()
             }
-            return ""
+        }
+
+        // Metode untuk mendapatkan URL gambar secara acak dari ArrayList
+        private fun getRandomImageUrl(): String {
+            return if (arrayUrl.isNotEmpty()) {
+                val randomIndex = random.nextInt(arrayUrl.size)
+                arrayUrl[randomIndex]
+            } else {
+                ""
+            }
         }
     }
+
 }
 
 
