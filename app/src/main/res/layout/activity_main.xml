@@ -44,12 +44,13 @@
                     android:layout_weight="1"
                     android:src="@drawable/ic_launcher_background" />
             </LinearLayout>
+
             <Button
                 android:id="@+id/btn_get"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="100dp"
-                android:text="Ambil gambar" />
+                android:text="Mulai Gacha!" />
 
             <TextView
                 android:id="@+id/tv_hasil"
@@ -60,7 +61,9 @@
                 android:text="Hasil output"
                 android:textAlignment="center"
                 android:textColor="#000"
-                android:visibility="gone" />
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:visibility="invisible" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"

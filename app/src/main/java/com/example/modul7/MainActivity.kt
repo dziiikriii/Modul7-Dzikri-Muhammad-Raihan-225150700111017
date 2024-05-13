@@ -1,6 +1,5 @@
 package com.example.modul7
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -9,7 +8,6 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import org.json.JSONArray
 import org.json.JSONException
@@ -25,8 +23,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var imgSlot3: ImageView
     private lateinit var btnGet: Button
     private lateinit var tvHasil: TextView
-//    private var arrayUrl = ArrayList<String>()
-
     private var isPlay = false
 
     private var execService1: ExecutorService? = null
@@ -59,9 +55,10 @@ class MainActivity : AppCompatActivity() {
 
         btnGet.setOnClickListener {
             if (!isPlay) {
-                slotTask1.play = true
-                slotTask2.play = true
-                slotTask3.play = true
+                tvHasil.visibility = View.INVISIBLE
+                slotTask1.reset()
+                slotTask2.reset()
+                slotTask3.reset()
 
                 execServicePool?.execute(slotTask1)
                 execServicePool?.execute(slotTask2)
@@ -70,11 +67,21 @@ class MainActivity : AppCompatActivity() {
                 btnGet.text = "Stop"
                 isPlay = true
             } else {
-                slotTask1.play = false
-                slotTask2.play = false
-                slotTask3.play = false
+                slotTask1.stop()
+                slotTask2.stop()
+                slotTask3.stop()
 
-                btnGet.text = "Play"
+                val allSame = slotTask1.imageId == slotTask2.imageId && slotTask2.imageId == slotTask3.imageId
+
+                if (allSame) {
+                    tvHasil.visibility = View.VISIBLE
+                    tvHasil.text = "BINGO!!!"
+                } else {
+                    tvHasil.visibility = View.VISIBLE
+                    tvHasil.text = "Anda kalah :("
+                }
+
+                btnGet.text = "Mulai Gacha!"
                 isPlay = false
             }
         }
@@ -83,25 +90,22 @@ class MainActivity : AppCompatActivity() {
     internal class SlotTask(private val slotImg: ImageView) : Runnable {
         private val random = Random()
         var play = true
-        private val arrayUrl = ArrayList<String>() // ArrayList untuk menyimpan URL gambar
+        private var arrayUrl = ArrayList<String>()
+        var imageId: Int = -1
 
         override fun run() {
             try {
-                // Ambil gambar dari URL dan simpan ke ArrayList
-                loadImagesFromNetwork()
-
                 while (play) {
-                    // Randomisasi URL gambar
-                    val imageUrl = getRandomImageUrl()
+                    val (imageUrl, id) = getRandomImage()
 
-                    // Tampilkan gambar menggunakan Glide
                     Handler(Looper.getMainLooper()).post {
                         Glide.with(slotImg.context)
                             .load(imageUrl)
                             .into(slotImg)
                     }
 
-                    // Tunggu untuk memuat gambar berikutnya
+                    imageId = id
+
                     Thread.sleep(random.nextInt(500).toLong())
                 }
             } catch (e: InterruptedException) {
@@ -109,54 +113,37 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Metode untuk memuat gambar dari URL dan menyimpannya ke ArrayList
-        private fun loadImagesFromNetwork() {
+        fun reset() {
+            play = true
+        }
+
+        fun stop() {
+            play = false
+        }
+
+        private fun getRandomImage(): Pair<String, Int> {
             val apiUrl = "https://662e87fba7dda1fa378d337e.mockapi.io/api/v1/fruits"
-            try {
-                val jsonString = URL(apiUrl).readText()
-                val jsonArray = JSONArray(jsonString)
-                for (i in 0 until jsonArray.length()) {
-                    val jsonObject = jsonArray.getJSONObject(i)
-                    arrayUrl.add(jsonObject.getString("url"))
+            return try {
+                if (arrayUrl.isEmpty()) {
+                    val jsonString = URL(apiUrl).readText()
+                    val jsonArray = JSONArray(jsonString)
+                    for (i in 0 until jsonArray.length()) {
+                        val jsonObject = jsonArray.getJSONObject(i)
+                        arrayUrl.add(jsonObject.getString("url"))
+                    }
                 }
+
+                val randomIndex = random.nextInt(arrayUrl.size)
+                val imageUrl = arrayUrl[randomIndex]
+
+                Pair(imageUrl, randomIndex)
             } catch (e: IOException) {
                 e.printStackTrace()
+                Pair("", -1)
             } catch (e: JSONException) {
                 e.printStackTrace()
-            }
-        }
-
-        // Metode untuk mendapatkan URL gambar secara acak dari ArrayList
-        private fun getRandomImageUrl(): String {
-            return if (arrayUrl.isNotEmpty()) {
-                val randomIndex = random.nextInt(arrayUrl.size)
-                arrayUrl[randomIndex]
-            } else {
-                ""
+                Pair("", -1)
             }
         }
     }
-
 }
-
-
-    @Throws(IOException::class)
-    private fun loadStringFromNetwork(s: String): String? {
-        val myUrl = URL(s)
-        val `in` = myUrl.openStream()
-        val out = StringBuilder()
-        val buffer = ByteArray(1024)
-        try {
-            var ctr: Int
-            while (`in`.read(buffer).also { ctr = it } != -1) {
-                out.append(String(buffer, 0, ctr))
-            }
-        } catch (e: IOException) {
-            throw RuntimeException(
-                "Gagal mendapatkan text",
-                e
-            )
-        }
-        return out.toString()
-    }
-
